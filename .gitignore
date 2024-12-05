@@ -1,3 +1,6 @@
+android/app/google-services.json
+android/app/src/main/res/values/google_maps_api.xml
+android/app/src/main/AndroidManifest.xml
 # OSX
 #
 .DS_Store
