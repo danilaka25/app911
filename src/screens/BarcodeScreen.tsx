@@ -56,51 +56,36 @@ const BarcodeScreen: React.FC = () => {
     }
   };
 
-  const handleCodeScanned = (() => {
-    let lastScanTimestamp = 0;
+  const handleCodeScanned = async (barcodes: Code[]) => {
+    const newBarcodes: BarcodeData[] = barcodes.map(item => ({
+      id: item.value || '',
+      rawValue: item.value || '',
+      format: item.type,
+      updatedAt: Date.now(),
+    }));
 
-    return async (barcodes: Code[]) => {
-      const now = Date.now();
+    const existingCodes = barcodesList.filter(existingCode =>
+      newBarcodes.some(newCode => newCode.rawValue === existingCode.rawValue),
+    );
 
-      // Prevent re-triggering if less than 3 seconds have passed
-      if (now - lastScanTimestamp < 3000) {
-        return;
-      }
+    console.log(existingCodes, existingCodes.length);
 
-      // Update the timestamp for the next scan
-      lastScanTimestamp = now;
-
-      const newBarcodes: BarcodeData[] = barcodes.map(item => ({
-        id: item.value || '',
-        rawValue: item.value || '',
-        format: item.type,
-        updatedAt: Date.now(),
-      }));
-
-      const existingCodes = barcodesList.filter(existingCode =>
-        newBarcodes.some(newCode => newCode.rawValue === existingCode.rawValue),
-      );
-
-      logger.info('Barcode scanned:', {barcodes});
-
-      if (existingCodes.length > 0) {
+    if (existingCodes.length > 0) {
+      setShowAlreadyExistingCode(true);
+      await wait(3000);
+      setShowAlreadyExistingCode(false);
+    } else {
+      setShowAlreadyExistingCode(false);
+      try {
         await wait(1000);
-        setShowAlreadyExistingCode(true);
-        await wait(3000);
-        setShowAlreadyExistingCode(false);
-      } else {
-        setShowAlreadyExistingCode(false);
-        try {
-          await barcodeService.saveBarcodes(newBarcodes);
-        } catch (error) {
-          logger.error('Failed to save barcode:', error);
-        } finally {
-          setIsCameraOpened(false);
-          setShowAlreadyExistingCode(false);
-        }
+        await barcodeService.saveBarcodes(newBarcodes);
+      } catch (error) {
+        console.error('Failed to save barcodes:', error);
+      } finally {
+        setIsCameraOpened(false);
       }
-    };
-  })();
+    }
+  };
 
   const codeScanner = useCodeScanner({
     codeTypes: ['qr', 'ean-13', 'upc-a', 'code-128'],
