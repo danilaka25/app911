@@ -6,7 +6,8 @@ export enum AppPermission {
   BLUETOOTH = 'BLUETOOTH',
 }
 
-const isAndroid12OrHigher = Platform.OS === 'android' && Platform.Version >= 31;
+const isAndroid31Higher = Platform.OS === 'android' && Platform.Version >= 31;
+const isAndroid29Higher = Platform.OS === 'android' && Platform.Version >= 29;
 
 export const PermissionMap = {
   [AppPermission.LOCATION]: {
@@ -16,8 +17,14 @@ export const PermissionMap = {
     android: PermissionsAndroid.PERMISSIONS.CAMERA,
   },
   [AppPermission.BLUETOOTH]: {
-    android: isAndroid12OrHigher
-      ? PermissionsAndroid.PERMISSIONS.BLUETOOTH_SCAN
-      : PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+    android: isAndroid31Higher
+      ? [
+          PermissionsAndroid.PERMISSIONS.BLUETOOTH_SCAN,
+          PermissionsAndroid.PERMISSIONS.BLUETOOTH_CONNECT,
+          PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+        ]
+      : isAndroid29Higher
+      ? PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION
+      : PermissionsAndroid.PERMISSIONS.ACCESS_COARSE_LOCATION,
   },
 } as const;

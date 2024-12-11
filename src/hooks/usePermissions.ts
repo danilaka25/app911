@@ -35,29 +35,35 @@ const usePermissions = (
     try {
       const permissionType = getPermissionType();
       logger.info('Checking permission:', {permissionType});
-      const isGranted = await PermissionsAndroid.check(permissionType);
-      logger.info('Permission status:', permissionType + isGranted);
 
-      if (isGranted) {
+      if (Array.isArray(permissionType)) {
+        const results = await Promise.all(
+          permissionType.map(permission => PermissionsAndroid.check(permission)),
+        );
+        const isGranted = results.every(result => result);
+        logger.info('Permission status:', {results, isGranted});
+
         setState({
-          granted: true,
+          granted: isGranted,
           loading: false,
           error: null,
           blocked: false,
-          shouldShowRequest: false,
+          shouldShowRequest: !isGranted,
         });
-        return true;
+        return isGranted;
+      } else {
+        const isGranted = await PermissionsAndroid.check(permissionType);
+        logger.info('Permission status:', {isGranted});
+
+        setState({
+          granted: isGranted,
+          loading: false,
+          error: null,
+          blocked: false,
+          shouldShowRequest: !isGranted,
+        });
+        return isGranted;
       }
-
-      setState({
-        granted: false,
-        loading: false,
-        error: null,
-        blocked: false,
-        shouldShowRequest: true,
-      });
-
-      return false;
     } catch (error) {
       logger.error('Permission check error:', error);
       setState({
@@ -75,30 +81,66 @@ const usePermissions = (
     setState(prev => ({...prev, loading: true, error: null}));
     try {
       const permissionType = getPermissionType();
-      logger.info('Requesting permission:', permissionType);
-      const result = await PermissionsAndroid.request(permissionType, {
-        title: `${permission} Permission`,
-        message: `App needs ${permission} permission to work properly`,
-        buttonPositive: 'OK',
-      });
-      logger.info('Permission request result:', result);
+      logger.info('Requesting permission:', {permissionType});
 
-      const isGranted = result === PermissionsAndroid.RESULTS.GRANTED;
-      const isBlocked = result === PermissionsAndroid.RESULTS.NEVER_ASK_AGAIN;
+      if (Array.isArray(permissionType)) {
+        const results = await Promise.all(
+          permissionType.map(permission =>
+            PermissionsAndroid.request(permission, {
+              title: `${permission} Permission`,
+              message: `App needs ${permission} permission to work properly`,
+              buttonPositive: 'OK',
+            }),
+          ),
+        );
+        const isGranted = results.every(
+          result => result === PermissionsAndroid.RESULTS.GRANTED,
+        );
+        const isBlocked = results.some(
+          result => result === PermissionsAndroid.RESULTS.NEVER_ASK_AGAIN,
+        );
 
-      if (isBlocked && onBlocked) {
-        onBlocked();
+        if (isBlocked && onBlocked) {
+          onBlocked();
+        }
+
+        setState({
+          granted: isGranted,
+          loading: false,
+          error: null,
+          blocked: isBlocked,
+          shouldShowRequest: !isGranted && !isBlocked,
+        });
+
+        return isGranted;
+      } else {
+        const result = await PermissionsAndroid.request(permissionType, {
+          title: `${permission} Permission`,
+          message: `App needs ${permission} permission to work properly`,
+          buttonPositive: 'OK',
+        });
+        logger.info('Permission request result:', result);
+
+        const isGranted = result === PermissionsAndroid.RESULTS.GRANTED;
+        const isBlocked = result === PermissionsAndroid.RESULTS.NEVER_ASK_AGAIN;
+
+        logger.info('Permission result isGranted:', isGranted);
+        logger.info('Permission result isBlocked:', isBlocked);
+
+        if (isBlocked && onBlocked) {
+          onBlocked();
+        }
+
+        setState({
+          granted: isGranted,
+          loading: false,
+          error: null,
+          blocked: isBlocked,
+          shouldShowRequest: !isGranted && !isBlocked,
+        });
+
+        return isGranted;
       }
-
-      setState({
-        granted: isGranted,
-        loading: false,
-        error: null,
-        blocked: isBlocked,
-        shouldShowRequest: !isGranted && !isBlocked,
-      });
-
-      return isGranted;
     } catch (error) {
       logger.error('Permission request error:', error);
       setState({
