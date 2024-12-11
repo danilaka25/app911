@@ -3,6 +3,7 @@ import {store} from '$src/store/store';
 import {setNetworks, setNetworksLoading, setNetworksError} from '$src/store';
 import {WifiNetwork} from '$src/types/wifi';
 import {userService} from '$src/services/userService';
+import {logger} from '$src/utils/logger';
 
 const COLLECTION_NAME = 'savedData';
 
@@ -23,7 +24,7 @@ export const wifiService = {
 
     try {
       const userId = await userService.getUserId();
-      console.log('Subscribing to WiFi networks for user:', userId);
+      logger.info('Starting WiFi scan');
 
       this.unsubscribe = firestore()
         .collection(COLLECTION_NAME)
@@ -31,23 +32,23 @@ export const wifiService = {
         .collection('networks')
         .onSnapshot(
           snapshot => {
-            console.log('Firestore snapshot received:', snapshot.size, 'documents');
+            logger.info('Networks found:', {count: snapshot.size});
             const networks: Record<string, WifiNetwork> = {};
             snapshot.forEach(doc => {
               networks[doc.id] = convertFirestoreData(doc);
             });
-            console.log('Processed networks:', Object.keys(networks).length);
+            logger.info('Processed networks:', Object.keys(networks).length);
             store.dispatch(setNetworks(networks));
             store.dispatch(setNetworksLoading(false));
           },
           error => {
-            console.error('Firestore subscription error:', error);
+            logger.error('WiFi scan failed:', error);
             store.dispatch(setNetworksError(error.message));
             store.dispatch(setNetworksLoading(false));
           },
         );
     } catch (error) {
-      console.error('Error setting up Firestore subscription:', error);
+      logger.error('Error setting up Firestore subscription:', error);
       store.dispatch(setNetworksError('Failed to connect to database'));
       store.dispatch(setNetworksLoading(false));
     }
@@ -56,7 +57,7 @@ export const wifiService = {
   async saveNetworks(networks: WifiNetwork[]) {
     try {
       const userId = await userService.getUserId();
-      console.log('Saving networks for user:', userId);
+      logger.info('Starting WiFi scan');
 
       const batch = firestore().batch();
       const userNetworksRef = firestore()
@@ -66,7 +67,7 @@ export const wifiService = {
 
       networks.forEach(network => {
         if (!network.BSSID) {
-          console.warn('Network missing BSSID:', network);
+          logger.warn('Network missing BSSID:', network);
           return;
         }
 
@@ -79,11 +80,11 @@ export const wifiService = {
         batch.set(networkRef, data, {merge: true});
       });
 
-      console.log('Committing batch write...');
+      logger.info('Committing batch write...');
       await batch.commit();
-      console.log('Networks saved successfully');
+      logger.info('Networks saved successfully');
     } catch (error) {
-      console.error('Error saving networks:', error);
+      logger.error('Error saving networks:', error);
       store.dispatch(setNetworksError('Failed to save networks'));
       throw error;
     }
@@ -91,7 +92,7 @@ export const wifiService = {
 
   unsubscribeFromWifiNetworks() {
     if (this.unsubscribe) {
-      console.log('Unsubscribing from Firestore');
+      logger.info('Unsubscribing from Firestore');
       this.unsubscribe();
       this.unsubscribe = null;
     }
@@ -107,7 +108,7 @@ export const wifiService = {
         .doc(bssid)
         .delete();
     } catch (error) {
-      console.error('Error deleting network:', error);
+      logger.error('Error deleting network:', error);
       store.dispatch(setNetworksError('Failed to delete network'));
     }
   },
@@ -128,7 +129,7 @@ export const wifiService = {
 
       await batch.commit();
     } catch (error) {
-      console.error('Error deleting all networks:', error);
+      logger.error('Error deleting all networks:', error);
       store.dispatch(setNetworksError('Failed to delete all networks'));
     }
   },

@@ -17,6 +17,7 @@ import {BlockedPermissionView, LocationItem} from '$src/components';
 import {Location} from '$src/types';
 import {getCurrentLocation, getLocations} from '$src/utils';
 import usePermissions from '$src/hooks/usePermissions';
+import {logger} from '$src/utils/logger';
 
 const {width} = Dimensions.get('window');
 
@@ -56,7 +57,7 @@ const MapScreen = () => {
       const location = await getCurrentLocation();
       setCurrentLocation(location);
     } catch (error) {
-      console.error('Failed to get location:', error);
+      logger.error('Failed to get location:', error);
     } finally {
       setLoading(false);
     }

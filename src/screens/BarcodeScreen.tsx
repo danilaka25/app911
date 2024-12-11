@@ -23,6 +23,7 @@ import {BarcodeItem} from '$src/components';
 import {usePermissions} from '$src/hooks';
 import {AppPermission} from '$src/types/permissions';
 import {BlockedPermissionView} from '$src/components';
+import {logger} from '$src/utils/logger';
 
 const wait = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -51,7 +52,7 @@ const BarcodeScreen: React.FC = () => {
     try {
       await barcodeService.subscribeToBarcodes();
     } catch (error) {
-      console.error('Error initializing Firestore subscription:', error);
+      logger.error('Error initializing Firestore subscription:', error);
     }
   };
 
@@ -80,7 +81,7 @@ const BarcodeScreen: React.FC = () => {
         newBarcodes.some(newCode => newCode.rawValue === existingCode.rawValue),
       );
 
-      console.log(existingCodes, existingCodes.length);
+      logger.info('Barcode scanned:', {barcodes});
 
       if (existingCodes.length > 0) {
         await wait(1000);
@@ -92,7 +93,7 @@ const BarcodeScreen: React.FC = () => {
         try {
           await barcodeService.saveBarcodes(newBarcodes);
         } catch (error) {
-          console.error('Failed to save barcodes:', error);
+          logger.error('Failed to save barcode:', error);
         } finally {
           setIsCameraOpened(false);
           setShowAlreadyExistingCode(false);
@@ -122,7 +123,7 @@ const BarcodeScreen: React.FC = () => {
             try {
               await barcodeService.deleteBarcode(barcode.id);
             } catch (error) {
-              console.error('Failed to delete barcode:', error);
+              logger.error('Failed to delete barcode:', error);
             }
           },
         },

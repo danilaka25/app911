@@ -2,7 +2,8 @@ import firestore from '@react-native-firebase/firestore';
 import {store} from '$src/store/store';
 import {setCodes, setBarcodeLoading, setBarcodeError} from '$src/store';
 import {BarcodeData} from '$src/types';
-import {userService} from '$src/services'
+import {userService} from '$src/services';
+import {logger} from '$src/utils/logger';
 
 const COLLECTION_NAME = 'savedData';
 
@@ -23,7 +24,7 @@ export const barcodeService = {
 
     try {
       const userId = await userService.getUserId();
-      console.log('Subscribing to barcodes for user:', userId);
+      logger.info('Subscribing to barcodes for user:', userId);
 
       this.unsubscribe = firestore()
         .collection(COLLECTION_NAME)
@@ -31,23 +32,23 @@ export const barcodeService = {
         .collection('barcodes')
         .onSnapshot(
           snapshot => {
-            console.log('Firestore snapshot received:', snapshot.size, 'documents');
+            logger.info('Firestore snapshot received:', {count: snapshot.size});
             const codes: Record<string, BarcodeData> = {}; 
             snapshot.forEach(doc => {
               codes[doc.id] = convertFirestoreData(doc);
             });
-            console.log('Processed barcodes:', Object.keys(codes).length);
+            logger.info('Processed barcodes:', Object.keys(codes).length);
             store.dispatch(setCodes(codes));
             store.dispatch(setBarcodeLoading(false));
           },
           error => {
-            console.error('Firestore subscription error:', error);
+            logger.error('Firestore subscription error:', error);
             store.dispatch(setBarcodeError(error.message));
             store.dispatch(setBarcodeLoading(false));
           },
         );
     } catch (error) {
-      console.error('Error setting up Firestore subscription:', error);
+      logger.error('Error setting up Firestore subscription:', error);
       store.dispatch(setBarcodeError('Failed to connect to database'));
       store.dispatch(setBarcodeLoading(false));
     }
@@ -56,7 +57,7 @@ export const barcodeService = {
   async saveBarcodes(codes: BarcodeData[]) {
     try {
       const userId = await userService.getUserId();
-      console.log('Saving barcodes for user:', userId);
+      logger.info('Saving barcodes for user:', userId);
 
       const batch = firestore().batch();
       const userBarcodesRef = firestore()
@@ -66,7 +67,7 @@ export const barcodeService = {
 
       codes.forEach(code => {
         if (!code.id) {
-          console.warn('Barcode missing ID:', code);
+          logger.warn('Barcode missing ID:', code);
           return;
         }
 
@@ -79,11 +80,11 @@ export const barcodeService = {
         batch.set(barcodeRef, data, {merge: true});
       });
 
-      console.log('Committing batch write...');
+      logger.info('Committing batch write...');
       await batch.commit();
-      console.log('Barcodes saved successfully');
+      logger.info('Barcodes saved successfully');
     } catch (error) {
-      console.error('Error saving barcodes:', error);
+      logger.error('Error saving barcodes:', error);
       store.dispatch(setBarcodeError('Failed to save barcodes'));
       throw error;
     }
@@ -91,7 +92,7 @@ export const barcodeService = {
 
   unsubscribeFromBarcodes() {
     if (this.unsubscribe) {
-      console.log('Unsubscribing from Firestore');
+      logger.info('Unsubscribing from Firestore');
       this.unsubscribe();
       this.unsubscribe = null;
     }
@@ -107,7 +108,7 @@ export const barcodeService = {
         .doc(barcodeId)
         .delete();
     } catch (error) {
-      console.error('Error deleting barcode:', error);
+      logger.error('Error deleting barcode:', error);
       store.dispatch(setBarcodeError('Failed to delete barcode'));
     }
   },
@@ -128,7 +129,7 @@ export const barcodeService = {
 
       await batch.commit();
     } catch (error) {
-      console.error('Error deleting all barcodes:', error);
+      logger.error('Error deleting all barcodes:', error);
       store.dispatch(setBarcodeError('Failed to delete all barcodes'));
     }
   },

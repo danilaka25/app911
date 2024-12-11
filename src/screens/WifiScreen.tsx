@@ -22,6 +22,7 @@ import {
 } from '$src/components';
 import usePermissions from '$src/hooks/usePermissions';
 import {AppPermission} from '$src/types/permissions';
+import {logger} from '$src/utils/logger';
 
 const WifiScreen = () => {
   const {networks, loading} = useSelector((state: RootState) => state.wifi);
@@ -47,11 +48,11 @@ const WifiScreen = () => {
 
   const initializeFirestoreSubscription = async () => {
     try {
-      console.log('Initializing Firestore subscription...');
+      logger.info('Initializing Firestore subscription...');
       await wifiService.subscribeToWifiNetworks();
-      console.log('Firestore subscription initialized successfully');
+      logger.info('Firestore subscription initialized successfully');
     } catch (error) {
-      console.error('Error initializing Firestore subscription:', error);
+      logger.error('Error initializing Firestore subscription:', error);
     }
   };
 
@@ -68,7 +69,7 @@ const WifiScreen = () => {
           });
         },
         error => {
-          console.error('Geolocation error:', error);
+          logger.error('Geolocation error:', error);
           reject(error);
         },
         {enableHighAccuracy: false, timeout: 15000, maximumAge: 10000},
@@ -97,13 +98,13 @@ const WifiScreen = () => {
         return;
       }
 
-      console.log('Starting WiFi scan...');
+      logger.info('Starting WiFi scan');
 
       const position = await getCurrentPosition();
-      console.log('Current position:', position);
+      logger.info('Current position:', position);
 
       const rawNetworks = await WifiManager.loadWifiList();
-      console.log('Raw networks found:', rawNetworks.length);
+      logger.info('Raw networks found:', rawNetworks.length);
 
       const parsedNetworks: WifiNetwork[] = rawNetworks.map(
         (network: RawWifiNetwork) => ({
@@ -113,12 +114,11 @@ const WifiScreen = () => {
           updatedAt: Date.now(),
         }),
       );
-
-      console.log('Saving networks to Firestore...');
+      logger.info('Saving networks to Firestore...');
       wifiService.saveNetworks(parsedNetworks);
-      console.log('Networks saved successfully');
+      logger.info('Networks saved successfully');
     } catch (error) {
-      console.error('WiFi scan failed:', error);
+      logger.error('WiFi scan failed:', error);
       Alert.alert('Scan Failed', 'Failed to scan WiFi networks');
     } finally {
       setIsScanning(false);
@@ -130,7 +130,7 @@ const WifiScreen = () => {
       await WifiManager.connectToProtectedSSID(ssid, pass, false, true);
       Alert.alert('Success', `Connected to ${ssid}`);
     } catch (error) {
-      console.error('WiFi connection failed:', error);
+      logger.error('WiFi connection failed:', error);
       Alert.alert(
         'Connection Failed',
         'Please check the password and try again',
@@ -164,7 +164,7 @@ const WifiScreen = () => {
             try {
               await wifiService.deleteNetwork(network.BSSID);
             } catch (error) {
-              console.error('Failed to delete network:', error);
+              logger.error('Failed to delete network:', error);
             }
           },
         },

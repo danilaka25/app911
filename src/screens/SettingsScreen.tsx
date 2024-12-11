@@ -6,8 +6,10 @@ import {
   Text,
   Alert,
   Linking,
+  Button,
 } from 'react-native';
 import {wifiService, bluetoothService, barcodeService} from '$src/services';
+import * as Sentry from '@sentry/react-native';
 
 const SettingsScreen = () => {
   const handleDeleteAll = async (
@@ -66,6 +68,12 @@ const SettingsScreen = () => {
         style={[styles.button, styles.buttonBlue]}
         onPress={() => Linking.openSettings()}>
         <Text style={styles.buttonText}>Go to settings</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        style={[styles.button, styles.buttonBlue]}
+        onPress={() => Sentry.captureException(new Error('Second error'))}>
+        <Text style={styles.buttonText}>Handle sentry error</Text>
       </TouchableOpacity>
     </View>
   );

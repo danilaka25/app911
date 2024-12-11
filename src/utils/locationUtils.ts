@@ -2,6 +2,7 @@ import Geolocation from '@react-native-community/geolocation';
 import {Location} from '$src/types';
 import {WifiNetwork} from '$src/types/wifi';
 import {BluetoothDevice} from '$src/types/bluetooth';
+import {logger} from '$src/utils/logger';
 
 export const getCurrentLocation = (): Promise<Location> => {
   return new Promise((resolve, reject) => {
@@ -19,7 +20,7 @@ export const getCurrentLocation = (): Promise<Location> => {
         });
       },
       error => {
-        console.error('Geolocation error:', error);
+        logger.error('Geolocation error:', error);
         reject(error);
       },
       {enableHighAccuracy: false, timeout: 15000, maximumAge: 10000},
@@ -65,4 +66,4 @@ export const getLocations = (
   });
 
   return locations;
-}; 
+};

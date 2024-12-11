@@ -4,5 +4,3 @@ export interface BarcodeData {
   format: string;
   updatedAt: number;
 }
-
- 

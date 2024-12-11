@@ -21,6 +21,7 @@ import {
   BlockedPermissionView,
 } from '$src/components';
 import {randomGeo} from '$src/utils/randomGeo';
+import {logger} from '$src/utils/logger';
 
 const BluetoothScreen = () => {
   const {devices, loading} = useSelector((state: RootState) => state.bluetooth);
@@ -35,6 +36,7 @@ const BluetoothScreen = () => {
   const [isBluetoothOff, setIsBluetoothOff] = useState(false);
 
   useEffect(() => {
+    logger.info('BluetoothScreen opened');
     initializeFirestoreSubscription();
     return () => {
       manager.destroy();
@@ -46,7 +48,7 @@ const BluetoothScreen = () => {
     try {
       await bluetoothService.subscribeToDevices();
     } catch (error) {
-      console.error('Error initializing Firestore subscription:', error);
+      logger.error('Error initializing Firestore subscription:', error);
     }
   };
 
@@ -62,16 +64,20 @@ const BluetoothScreen = () => {
   };
 
   const startScanning = async () => {
+    logger.info('Start scanning bluetooth');
+
     setIsScanning(true);
     const scannedDevices: BluetoothDevice[] = [];
 
     try {
       manager.startDeviceScan(null, null, async (error, device) => {
         if (error) {
-          console.error('Scan error:', error);
           if (error.message.includes('powered off')) {
+            logger.error('Bluetooth powered off', error.message);
             setIsBluetoothOff(true);
           }
+
+          logger.info('Stop scanning bluetooth');
           stopScanning();
           return;
         }
@@ -96,13 +102,15 @@ const BluetoothScreen = () => {
 
       // Stop scanning after 5 seconds
       setTimeout(async () => {
+        logger.info('Stop scanning bluetooth');
         stopScanning();
         if (scannedDevices.length > 0) {
+          logger.info('Save bluetooth devices');
           await bluetoothService.saveDevices(scannedDevices);
         }
       }, 5000);
     } catch (error) {
-      console.error('Scanning failed:', error);
+      logger.error('Scanning failed:', error);
       setIsBluetoothOff(true);
       stopScanning();
     }
@@ -129,7 +137,7 @@ const BluetoothScreen = () => {
             try {
               await bluetoothService.deleteDevice(device.id);
             } catch (error) {
-              console.error('Failed to delete device:', error);
+              logger.error('Failed to delete device:', error);
             }
           },
         },

@@ -15,6 +15,26 @@ import {
 } from '$src/screens';
 import {RootTabParamList, RootStackParamList} from '$src/types';
 import {SettingsButton} from '$src/components';
+import * as Sentry from '@sentry/react-native';
+import {SENTRY_DSN} from '@env';
+
+Sentry.init({
+  dsn: SENTRY_DSN,
+  tracesSampleRate: 1.0,
+  profilesSampleRate: 1.0,
+  enableAutoPerformanceTracing: true,
+  debug: true,
+  enabled: true,
+  environment: __DEV__ ? 'development' : 'production',
+  integrations: [
+    Sentry.breadcrumbsIntegration({
+      console: true,
+      dom: true,
+      fetch: true,
+      history: true,
+    }),
+  ],
+});
 
 const Tab = createBottomTabNavigator<RootTabParamList>();
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -75,4 +95,4 @@ const App: React.FC = (): JSX.Element => {
   );
 };
 
-export default App;
+export default Sentry.wrap(App);

@@ -3,6 +3,7 @@ import {store} from '$src/store/store';
 import {setDevices, setDevicesLoading, setDevicesError} from '$src/store';
 import {BluetoothDevice} from '$src/types/bluetooth';
 import {userService} from '$src/services/userService';
+import {logger} from '$src/utils/logger';
 
 const COLLECTION_NAME = 'savedData';
 
@@ -23,7 +24,7 @@ export const bluetoothService = {
 
     try {
       const userId = await userService.getUserId();
-      console.log('Subscribing to Bluetooth devices for user:', userId);
+      logger.info('Subscribing to Bluetooth devices for user:', userId);
 
       this.unsubscribe = firestore()
         .collection(COLLECTION_NAME)
@@ -31,23 +32,23 @@ export const bluetoothService = {
         .collection('devices')
         .onSnapshot(
           snapshot => {
-            console.log('Firestore snapshot received:', snapshot.size, 'documents');
+            logger.info('Firestore snapshot received:', {count: snapshot.size});
             const devices: Record<string, BluetoothDevice> = {};
             snapshot.forEach(doc => {
               devices[doc.id] = convertFirestoreData(doc);
             });
-            console.log('Processed devices:', Object.keys(devices).length);
+            logger.info('Processed devices:', {count: Object.keys(devices).length});
             store.dispatch(setDevices(devices));
             store.dispatch(setDevicesLoading(false));
           },
           error => {
-            console.error('Firestore subscription error:', error);
+            logger.error('Firestore subscription error:', error);
             store.dispatch(setDevicesError(error.message));
             store.dispatch(setDevicesLoading(false));
           },
         );
     } catch (error) {
-      console.error('Error setting up Firestore subscription:', error);
+      logger.error('Error setting up Firestore subscription:', error);
       store.dispatch(setDevicesError('Failed to connect to database'));
       store.dispatch(setDevicesLoading(false));
     }
@@ -56,7 +57,7 @@ export const bluetoothService = {
   async saveDevices(devices: BluetoothDevice[]) {
     try {
       const userId = await userService.getUserId();
-      console.log('Saving devices for user:', userId);
+      logger.info('Saving devices for user:', userId);
 
       const batch = firestore().batch();
       const userDevicesRef = firestore()
@@ -66,7 +67,7 @@ export const bluetoothService = {
 
       devices.forEach(device => {
         if (!device.id) {
-          console.warn('Device missing ID:', device);
+          logger.warn('Device missing ID:', device);
           return;
         }
 
@@ -79,11 +80,11 @@ export const bluetoothService = {
         batch.set(deviceRef, data, {merge: true});
       });
 
-      console.log('Committing batch write...');
+      logger.info('Committing batch write...');
       await batch.commit();
-      console.log('Devices saved successfully');
+      logger.info('Devices saved successfully');
     } catch (error) {
-      console.error('Error saving devices:', error);
+      logger.error('Error saving devices:', error);
       store.dispatch(setDevicesError('Failed to save devices'));
       throw error;
     }
@@ -91,7 +92,7 @@ export const bluetoothService = {
 
   unsubscribeFromDevices() {
     if (this.unsubscribe) {
-      console.log('Unsubscribing from Firestore');
+      logger.info('Unsubscribing from Firestore');
       this.unsubscribe();
       this.unsubscribe = null;
     }
@@ -108,7 +109,7 @@ export const bluetoothService = {
         .doc(bssid)
         .delete();
     } catch (error) {
-      console.error('Error deleting network:', error);
+      logger.error('Error deleting network:', error);
       store.dispatch(setDevicesError('Failed to delete network'));
     }
   },
@@ -129,7 +130,7 @@ export const bluetoothService = {
 
       await batch.commit();
     } catch (error) {
-      console.error('Error deleting all networks:', error);
+      logger.error('Error deleting all networks:', error);
       store.dispatch(setDevicesError('Failed to delete all networks'));
     }
   }

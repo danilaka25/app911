@@ -1,6 +1,7 @@
 import {useState, useEffect, useCallback} from 'react';
 import {PermissionsAndroid} from 'react-native';
 import {AppPermission, PermissionMap} from '$src/types/permissions';
+import {logger} from '$src/utils/logger';
 
 interface PermissionState {
   granted: boolean;
@@ -33,9 +34,9 @@ const usePermissions = (
     setState(prev => ({...prev, loading: true, error: null}));
     try {
       const permissionType = getPermissionType();
-      console.log('Checking permission:', permissionType);
+      logger.info('Checking permission:', {permissionType});
       const isGranted = await PermissionsAndroid.check(permissionType);
-      console.log('Permission status:', isGranted);
+      logger.info('Permission status:', permissionType + isGranted);
 
       if (isGranted) {
         setState({
@@ -58,7 +59,7 @@ const usePermissions = (
 
       return false;
     } catch (error) {
-      console.error('Permission check error:', error);
+      logger.error('Permission check error:', error);
       setState({
         granted: false,
         loading: false,
@@ -74,13 +75,13 @@ const usePermissions = (
     setState(prev => ({...prev, loading: true, error: null}));
     try {
       const permissionType = getPermissionType();
-      console.log('Requesting permission:', permissionType);
+      logger.info('Requesting permission:', permissionType);
       const result = await PermissionsAndroid.request(permissionType, {
         title: `${permission} Permission`,
         message: `App needs ${permission} permission to work properly`,
         buttonPositive: 'OK',
       });
-      console.log('Permission request result:', result);
+      logger.info('Permission request result:', result);
 
       const isGranted = result === PermissionsAndroid.RESULTS.GRANTED;
       const isBlocked = result === PermissionsAndroid.RESULTS.NEVER_ASK_AGAIN;
@@ -99,7 +100,7 @@ const usePermissions = (
 
       return isGranted;
     } catch (error) {
-      console.error('Permission request error:', error);
+      logger.error('Permission request error:', error);
       setState({
         granted: false,
         loading: false,

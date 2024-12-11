@@ -2,6 +2,11 @@ const {getDefaultConfig, mergeConfig} = require('@react-native/metro-config');
 const {
     wrapWithReanimatedMetroConfig,
   } = require('react-native-reanimated/metro-config');
+
+const {
+ withSentryConfig
+} = require('@sentry/react-native/metro');
+
 /**
  * Metro configuration
  * https://reactnative.dev/docs/metro
@@ -10,5 +15,6 @@ const {
  */
 const config = {};
 
-module.exports = wrapWithReanimatedMetroConfig(mergeConfig(getDefaultConfig(__dirname), config));
-
+module.exports = withSentryConfig(
+ wrapWithReanimatedMetroConfig(mergeConfig(getDefaultConfig(__dirname), config))
+);
