@@ -32,7 +32,7 @@ const BluetoothScreen = () => {
     AppPermission.BLUETOOTH,
     () => setShowBlockedModal(true),
   );
-  const manager = new BleManager();
+  const [manager] = useState(() => new BleManager());
   const [isBluetoothOff, setIsBluetoothOff] = useState(false);
 
   useEffect(() => {

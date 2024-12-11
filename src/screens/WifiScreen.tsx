@@ -115,7 +115,7 @@ const WifiScreen = () => {
         }),
       );
       logger.info('Saving networks to Firestore...');
-      wifiService.saveNetworks(parsedNetworks);
+      await wifiService.saveNetworks(parsedNetworks);
       logger.info('Networks saved successfully');
     } catch (error) {
       logger.error('WiFi scan failed:', error);

@@ -49,7 +49,7 @@ const MapScreen = () => {
     };
 
     checkAndGetLocation();
-  }, []);
+  }, [hasPermission]);
 
   const handleGetCurrentLocation = async () => {
     setLoading(true);
